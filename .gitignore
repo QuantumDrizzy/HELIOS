@@ -1,0 +1,44 @@
+# Rust build artifacts
+target/
+**/*.rlib
+**/*.rmeta
+**/*.d
+**/*.pdb
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.env
+.venv/
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+
+# SQLite WAL/SHM temp files
+*.sqlite-shm
+*.sqlite-wal
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# CUDA compiled
+*.ptx
+*.cubin
+*.fatbin
+
+# Logs
+*.log
+logs/
