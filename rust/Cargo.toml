@@ -13,6 +13,7 @@ sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "chrono"] }
 
 # Shared state between UI and Control
 eframe = { version = "0.31", features = ["wgpu"] }
+egui_plot = "0.31"
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
