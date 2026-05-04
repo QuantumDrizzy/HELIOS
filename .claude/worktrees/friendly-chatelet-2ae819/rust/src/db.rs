@@ -9,11 +9,6 @@ pub struct HeliosDB {
 }
 
 impl HeliosDB {
-    /// Expose the connection pool for direct queries from main
-    pub fn pool(&self) -> &SqlitePool {
-        &self.pool
-    }
-
     pub async fn init(db_path: &str) -> anyhow::Result<Self> {
         // Asegurar que el directorio de datos existe
         if let Some(parent) = std::path::Path::new(db_path).parent() {

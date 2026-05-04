@@ -2,7 +2,7 @@
 name = "helios-core"
 version = "0.1.0"
 edition = "2021"
-description = "HELIOS-NODE — High-speed predictive power controller"
+description = "HELIOS — High-speed predictive power controller"
 
 [dependencies]
 # Async for non-blocking I/O (DRL communication)
@@ -13,7 +13,6 @@ sqlx = { version = "0.8", features = ["runtime-tokio", "sqlite", "chrono"] }
 
 # Shared state between UI and Control
 eframe = { version = "0.31", features = ["wgpu"] }
-egui_plot = "0.31"
 
 # Serialization
 serde = { version = "1", features = ["derive"] }
