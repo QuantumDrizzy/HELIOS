@@ -15,6 +15,9 @@ import sys
 import time
 import sqlite3
 
+sys.stdout.reconfigure(encoding='utf-8')
+sys.stderr.reconfigure(encoding='utf-8')
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -89,34 +92,43 @@ class HELIOSAgent:
     
     def read_recent_telemetry(self, n=5):
         """
-        Read last N power readings from SQLite.
-        Returns normalized (power, temp_proxy) pairs.
+        Read last N telemetry readings from SQLite.
+        Returns (ghi_norm, temp_norm) pairs matching training distribution.
+
+        Training features (dataset_generator.py):
+          ghi_norm  = GHI_wm2 / 1100          — physical max for Murcia latitude
+          temp_norm = (temp_c - min) / range   — PVGIS air temperature, min-max scaled
+
+        Inference mapping:
+          ghi_norm  ← current_A / Isc (10 A)  — photocurrent ∝ irradiance (exact physics)
+          temp_norm ← 0.5 constant             — no temp sensor in simulation; midpoint
+                                                 of Murcia TMY range (~0–40 °C)
         """
         try:
             conn = sqlite3.connect(DB_PATH)
             cursor = conn.execute(
-                "SELECT power, voltage FROM power_telemetry ORDER BY id DESC LIMIT ?",
+                "SELECT irradiance_wm2, power FROM power_telemetry ORDER BY id DESC LIMIT ?",
                 (n,)
             )
             rows = cursor.fetchall()
             conn.close()
-            
+
             if len(rows) < n:
                 return None
-            
+
             # Reverse to chronological order
             rows = rows[::-1]
-            
-            # Normalize power to [0, 1] (max ~380W for standard panel)
-            powers = np.array([r[0] / 380.0 for r in rows], dtype=np.float32)
-            powers = np.clip(powers, 0.0, 1.0)
-            
-            # Use voltage deviation as temperature proxy
-            temps = np.array([(r[1] - 40.0) / 20.0 for r in rows], dtype=np.float32)
-            temps = np.clip(temps, 0.0, 1.0)
-            
-            return np.stack([powers, temps], axis=-1)  # [n, 2]
-            
+
+            # GHI norm: direct from PVGIS irradiance stored in DB (migration 0002).
+            # Matches training normalization: ghi / 1100 (max W/m² for Murcia).
+            ghi_proxy = np.array([max(r[0], 0.0) / 1100.0 for r in rows], dtype=np.float32)
+            ghi_proxy = np.clip(ghi_proxy, 0.0, 1.0)
+
+            # Temperature proxy: constant midpoint (no thermal sensor in simulation)
+            temps = np.full(n, 0.5, dtype=np.float32)
+
+            return np.stack([ghi_proxy, temps], axis=-1)  # [n, 2]
+
         except Exception as e:
             print(f"[HELIOS-AI] DB read error: {e}")
             return None
