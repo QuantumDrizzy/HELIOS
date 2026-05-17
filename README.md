@@ -57,16 +57,34 @@ helios-core (Rust)         ← MPPT Controller
 
 ## run
 
+### 0. Prerequisites
+
+- Rust 1.78+ — https://rustup.rs
+- Python 3.11+ with pip
+- SQLite (bundled with Python)
+
+```bash
+# Clone and enter
+git clone https://github.com/QuantumDrizzy/HELIOS.git
+cd HELIOS
+
+# Create runtime data directory
+mkdir -p data
+
+# Install Python dependencies
+pip install -r requirements.txt
+```
+
 ### 1. Prepare Data & Train Model
 
 ```bash
-# Fetch real PVGIS data for Aljucer, Murcia
+# Fetch real PVGIS irradiance data for Aljucer, Murcia (requires internet)
 python ai/pvgis_client.py
 
 # Generate training dataset with cloud perturbations
 python ai/dataset_generator.py
 
-# Train the LSTM model
+# Train the LSTM model (~5 min on CPU)
 python ai/train.py --epochs 50
 ```
 
@@ -74,18 +92,18 @@ python ai/train.py --epochs 50
 
 Open two terminals.
 
-**Terminal 1 (AI Agent):**
+**Terminal 1 — AI Agent:**
 ```bash
 python ai/agent.py --serve
 ```
 
-**Terminal 2 (Rust Core + Dashboard):**
+**Terminal 2 — Rust Core + Dashboard:**
 ```bash
 cd rust/
 cargo run --release -- --ui
 ```
 
-The system will start simulating days using the real PVGIS irradiance data, and you'll see the dashboard rendering the power telemetry and the AI forecasts in real-time.
+The system simulates day/night cycles using real PVGIS irradiance data. The egui dashboard renders power telemetry and AI forecasts in real-time. The SQLite DB at `data/energy_bus.sqlite` is created automatically on first run.
 
 ---
 
@@ -99,4 +117,4 @@ The system will start simulating days using the real PVGIS irradiance data, and 
 
 ## license
 
-unlicensed / private research. contact: Antonio Rodríguez (QuantumDrizzy)
+MIT — Antonio Zambudio Rodriguez (QuantumDrizzy) · drizzyrdrgz.exe@protonmail.com
