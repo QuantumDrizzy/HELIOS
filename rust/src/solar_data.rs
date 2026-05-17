@@ -91,3 +91,56 @@ impl SolarDataset {
         daylight.iter().sum::<f64>() / daylight.len() as f64
     }
 }
+
+// ─── Tests ───────────────────────────────────────────────────────────────────
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_murcia_csv_loads_and_has_expected_length() {
+        // Cargo runs tests from rust/ so ../data resolves to the project data dir
+        let ds = SolarDataset::load("../data/pvgis_murcia_tmy.csv")
+            .expect("Murcia PVGIS CSV must be loadable");
+        assert_eq!(ds.len(), 8760, "TMY dataset must have 8760 hourly records");
+    }
+
+    #[test]
+    fn test_irradiance_at_returns_unit_interval() {
+        let ds = SolarDataset::load("../data/pvgis_murcia_tmy.csv")
+            .expect("Murcia PVGIS CSV must be loadable");
+        for h in 0..ds.len() {
+            let v = ds.irradiance_at(h);
+            assert!(
+                v >= 0.0 && v <= 1.2,
+                "irradiance_at({h}) = {v} is outside [0.0, 1.2]"
+            );
+        }
+    }
+
+    #[test]
+    fn test_irradiance_wraps_around() {
+        let ds = SolarDataset::load("../data/pvgis_murcia_tmy.csv")
+            .expect("Murcia PVGIS CSV must be loadable");
+        let n = ds.len();
+        assert_eq!(
+            ds.irradiance_at(0),
+            ds.irradiance_at(n),
+            "irradiance_at must wrap: hour 0 == hour N"
+        );
+    }
+
+    #[test]
+    fn test_peak_ghi_is_positive() {
+        let ds = SolarDataset::load("../data/pvgis_murcia_tmy.csv")
+            .expect("Murcia PVGIS CSV must be loadable");
+        assert!(ds.peak_ghi() > 0.0, "Murcia peak GHI must be > 0");
+    }
+
+    #[test]
+    fn test_load_missing_file_returns_error() {
+        let result = SolarDataset::load("/nonexistent/path/data.csv");
+        assert!(result.is_err(), "Loading a missing file must return Err");
+    }
+}

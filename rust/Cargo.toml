@@ -18,6 +18,7 @@ egui_plot = "0.31"
 # Serialization
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
+toml = "0.8"
 
 # Cryptographic integrity
 sha2 = "0.10"
@@ -25,6 +26,9 @@ hex = "0.4"
 
 # Random (synthetic data)
 rand = "0.8"
+
+# Industrial Hardware Support
+rmodbus = "0.9"    # Industrial Modbus protocol for Inverters
 
 # Error handling
 thiserror = "2"
@@ -34,3 +38,7 @@ anyhow = "1"
 chrono = "0.4"
 tracing = "0.1"
 tracing-subscriber = "0.3"
+
+# Raspberry Pi GPIO/I2C/PWM — Linux only
+[target.'cfg(target_os = "linux")'.dependencies]
+rppal = "0.19"

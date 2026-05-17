@@ -1,44 +1,52 @@
-# Rust build artifacts
-target/
-**/*.rlib
-**/*.rmeta
-**/*.d
-**/*.pdb
+# Universal .gitignore for Drizzy's Research Ecosystem
 
-# Python
+# Rust / C++ Build Artifacts
+target/
+**/target/
+build/
+bin/
+*.exe
+*.dll
+*.so
+*.dylib
+*.pdb
+*.rlib
+*.rmeta
+
+# Python & AI Metadata
 __pycache__/
 *.py[cod]
-*.pyo
-*.pyd
-.env
-.venv/
+*$py.class
 venv/
+.env
+.venv
 env/
-*.egg-info/
-dist/
-build/
-.pytest_cache/
-.mypy_cache/
+.claude/
+.gemini/
+.agents/
+.qwen/
+.anthropic/
 
-# SQLite WAL/SHM temp files
-*.sqlite-shm
-*.sqlite-wal
-
-# OS
-.DS_Store
-Thumbs.db
-
-# IDE
+# IDEs & System
 .vscode/
 .idea/
-*.swp
-*.swo
+.gradle/
+.kotlin/
+*.iml
+.DS_Store
+Thumbs.db
+desktop.ini
 
-# CUDA compiled
-*.ptx
-*.cubin
-*.fatbin
-
-# Logs
+# Data & Logs
 *.log
-logs/
+data/*.csv
+data/*.json
+data/*.sqlite
+data/*.sqlite-shm
+data/*.sqlite-wal
+!data/.gitkeep
+out/
+dist/
+
+# Cargo worktrees / claude worktrees
+.claude/

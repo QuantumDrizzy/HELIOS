@@ -1,0 +1,43 @@
+# HELIOS-NODE — Sovereign Energy OS Configuration
+# Use this file to define your hardware and regional parameters.
+
+[station]
+id = "HELIOS-GLOBAL-01"
+location = "Murcia, Spain"
+elevation_m = 43.0
+solar_data_path = "../data/pvgis_murcia_tmy.csv" # Dynamic path for any country
+
+[panel]
+brand = "Generic High-Efficiency"
+model = "Global Series 400"
+voc = 48.0
+isc = 10.0
+pmax = 400.0
+
+[battery]
+# Universal Battery Support
+chemistry = "LiFePO4"   # Options: LiFePO4, Li-ion, Lead-acid
+capacity_ah = 200.0     # Total capacity in Ah
+nominal_voltage = 48.0  # System voltage (usually 12V, 24V or 48V)
+max_soc = 0.95          # Don't charge above 95%
+min_soc = 0.15          # Don't discharge below 15% (protects battery)
+
+[controller]
+mode = "simulation"          # "simulation" | "hardware"
+tick_rate_ms = 100
+mppt_algorithm = "perturb_and_observe"
+
+[hardware]
+i2c_bus            = 1       # Raspberry Pi I2C bus (usually 1)
+ina219_address     = 0x40   # Default INA219 I2C address
+ina219_shunt_ohms  = 0.1    # Shunt resistor value in ohms
+panel_stc_watts    = 300.0  # Panel STC rated power for irradiance normalisation
+spd_pin            = 17     # BCM GPIO pin — Surge Protection Device status
+breaker_pin        = 27     # BCM GPIO pin — DC breaker/relay closed status
+pwm_pin            = 18     # BCM GPIO pin — hardware PWM0 (also valid: 12)
+pwm_frequency_hz   = 25000  # MPPT PWM carrier frequency in Hz
+
+[economic]
+peak_price = 0.25
+off_peak_price = 0.15
+currency = "EUR"
