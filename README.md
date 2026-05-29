@@ -1,5 +1,7 @@
 # HELIOS-NODE
 
+[![CI](https://github.com/QuantumDrizzy/HELIOS/actions/workflows/ci.yml/badge.svg)](https://github.com/QuantumDrizzy/HELIOS/actions/workflows/ci.yml)
+
 Predictive DC-microgrid controller for solar arrays. Features an MPPT loop in Rust, CNN-LSTM cloud forecasting in PyTorch, real PVGIS data integration, an egui dashboard, and post-quantum trust anchors over local IPC. Fully functional end-to-end.
 
 ---
@@ -110,8 +112,8 @@ The system simulates day/night cycles using real PVGIS irradiance data. The egui
 ## what's missing
 
 - real ADC/GPIO reads replacing the PVGIS-simulated V/I sensor in `main.rs` (can be easily wired to an INA219).
-- actual ML-DSA signature in `helios-sentinel: sign_checkpoint()` (mock returns 64 zero bytes).
-- end-to-end integration test / CI.
+- Unix Domain Socket server requires Linux/RPi to run (stub on Windows by design).
+- full hardware-in-the-loop end-to-end test (16 Rust unit tests pass via `cargo test`; CI builds + tests on every push — what remains is a real-hardware HIL run).
 
 ---
 

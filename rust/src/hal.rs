@@ -320,7 +320,8 @@ pub struct GenericModbusInverter {
 
 impl Inverter for GenericModbusInverter {
     fn read_output_ac_voltage(&self) -> anyhow::Result<f64> {
-        // TODO: query Modbus register 0x0100 via rmodbus
+        // Hardware stub: returns nominal 230 V AC. On real hardware, read the
+        // inverter's AC output via rmodbus (Modbus holding register 0x0100).
         Ok(230.5)
     }
     fn read_efficiency(&self) -> anyhow::Result<f64> {

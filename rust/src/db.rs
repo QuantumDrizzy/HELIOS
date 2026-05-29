@@ -29,19 +29,7 @@ impl HeliosDB {
             .connect_with(options)
             .await?;
 
-        sqlx::query(include_str!("../../migrations/0001_initial_schema.sql"))
-            .execute(&pool)
-            .await?;
-
-        // Migration 0002 — add soc + irradiance_wm2 columns.
-        // SQLite has no IF NOT EXISTS for ALTER TABLE, so we ignore
-        // "duplicate column" errors (safe to re-run on existing DBs).
-        for stmt in [
-            "ALTER TABLE power_telemetry ADD COLUMN soc            REAL NOT NULL DEFAULT 0.5",
-            "ALTER TABLE power_telemetry ADD COLUMN irradiance_wm2 REAL NOT NULL DEFAULT 0.0",
-        ] {
-            let _ = sqlx::query(stmt).execute(&pool).await;
-        }
+        Self::apply_schema(&pool).await?;
 
         Ok(Self { pool })
     }
@@ -59,11 +47,29 @@ impl HeliosDB {
             .connect_with(options)
             .await?;
 
-        sqlx::query(include_str!("../../migrations/0001_initial_schema.sql"))
-            .execute(&pool)
-            .await?;
+        Self::apply_schema(&pool).await?;
 
         Ok(Self { pool })
+    }
+
+    /// Apply the full schema: base migration 0001 + the 0002 ALTER columns
+    /// (`soc`, `irradiance_wm2`). Shared by both `init` and `init_memory` so the
+    /// production and in-memory test databases never drift apart.
+    async fn apply_schema(pool: &SqlitePool) -> anyhow::Result<()> {
+        sqlx::query(include_str!("../../migrations/0001_initial_schema.sql"))
+            .execute(pool)
+            .await?;
+
+        // SQLite has no IF NOT EXISTS for ALTER TABLE; ignore "duplicate column"
+        // errors so this is safe to re-run on an existing DB.
+        for stmt in [
+            "ALTER TABLE power_telemetry ADD COLUMN soc            REAL NOT NULL DEFAULT 0.5",
+            "ALTER TABLE power_telemetry ADD COLUMN irradiance_wm2 REAL NOT NULL DEFAULT 0.0",
+        ] {
+            let _ = sqlx::query(stmt).execute(pool).await;
+        }
+
+        Ok(())
     }
 
     pub async fn append_audit(

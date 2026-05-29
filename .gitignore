@@ -26,6 +26,7 @@ env/
 .agents/
 .qwen/
 .anthropic/
+CLAUDE.md
 
 # IDEs & System
 .vscode/
