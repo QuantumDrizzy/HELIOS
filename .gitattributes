@@ -1,0 +1,16 @@
+# Cross-platform line-ending normalization — so the repo runs anywhere.
+* text=auto
+
+# Shell scripts MUST stay LF: CRLF breaks them on Linux/macOS (\r: command not found).
+*.sh  text eol=lf
+
+# Windows scripts stay CRLF.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+
+# Binary artifacts — never normalize or diff.
+*.pt     binary
+*.png    binary
+*.pdf    binary
+*.otf    binary
+*.sqlite binary
