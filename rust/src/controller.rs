@@ -32,6 +32,8 @@ pub struct PredictiveController {
     forecast_irradiance: f64,
     last_update: Instant,
     tick_count: u64,
+    /// Panel electrical specs — retained for panel-aware MPPT limits (not yet wired).
+    #[allow(dead_code)]
     panel_config: PanelConfig,
     economic_config: EconomicConfig,
     battery_config: BatteryConfig,
@@ -65,7 +67,8 @@ impl PredictiveController {
         self.current_state
     }
 
-    /// Get total tick count
+    /// Get total tick count (telemetry helper; not consumed in the current loop).
+    #[allow(dead_code)]
     pub fn ticks(&self) -> u64 {
         self.tick_count
     }

@@ -128,16 +128,6 @@ impl HeliosDB {
         Ok(())
     }
 
-    pub async fn log_forecast(&self, value: f64, confidence: f64) -> anyhow::Result<()> {
-        sqlx::query(
-            "INSERT INTO ai_forecasts (forecast_value, confidence) VALUES (?, ?)",
-        )
-        .bind(value).bind(confidence)
-        .execute(&self.pool)
-        .await?;
-        Ok(())
-    }
-
     /// Retrieve the last `n` telemetry rows (newest first).
     /// Returns (voltage, current, power, duty_cycle, soc, irradiance_wm2).
     pub async fn get_last_n_telemetry(&self, n: i64) -> anyhow::Result<Vec<(f64, f64, f64, f64, f64, f64)>> {

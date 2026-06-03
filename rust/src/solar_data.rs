@@ -7,7 +7,11 @@ use std::fs::File;
 use std::io::{BufRead, BufReader};
 use std::path::Path;
 
+/// One hourly PVGIS TMY record. The full schema is parsed; today only `ghi` is
+/// consumed by the simulation — `temp_c`/`wind_ms`/`dni` are retained for future
+/// thermal/efficiency modeling.
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct SolarRecord {
     pub hour: usize,
     pub ghi: f64,       // Global horizontal irradiance [W/m²]
@@ -64,7 +68,8 @@ impl SolarDataset {
         (self.records[idx].ghi / 1000.0).clamp(0.0, 1.2)
     }
 
-    /// Get temperature at a given hour
+    /// Get temperature at a given hour (dataset utility; not used in the sim loop yet).
+    #[allow(dead_code)]
     pub fn temperature_at(&self, hour: usize) -> f64 {
         if self.records.is_empty() { return 25.0; }
         let idx = hour % self.records.len();
@@ -81,7 +86,8 @@ impl SolarDataset {
         self.records.iter().map(|r| r.ghi).fold(0.0f64, f64::max)
     }
 
-    /// Average GHI (non-zero hours only)
+    /// Average GHI over daylight hours (dataset utility; not used in the sim loop yet).
+    #[allow(dead_code)]
     pub fn avg_ghi_daylight(&self) -> f64 {
         let daylight: Vec<f64> = self.records.iter()
             .filter(|r| r.ghi > 10.0)

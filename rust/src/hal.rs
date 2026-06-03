@@ -3,6 +3,11 @@
 //! All real hardware (rppal GPIO / I2C / PWM) is gated behind
 //! `#[cfg(target_os = "linux")]` so the crate builds on Windows in
 //! pure-simulation mode without any native dependencies.
+//!
+//! Several items (INA219 registers, the Modbus inverter address, sensor helpers)
+//! are consumed only on the Linux/RPi hardware target, so they read as dead code
+//! in Windows simulation builds — hence the module-level allow below.
+#![allow(dead_code)]
 
 use crate::config::{HardwareConfig, PanelConfig};
 use crate::controller::simulate_panel;

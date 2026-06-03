@@ -19,12 +19,16 @@ pub struct HeliosConfig {
 pub struct StationConfig {
     pub id:              String,
     pub location:        String,
+    /// Station elevation — part of the TOML schema; not consumed by the sim yet.
+    #[allow(dead_code)]
     pub elevation_m:     f64,
     pub solar_data_path: String,
 }
 
 #[derive(Debug, Deserialize, Clone)]
 pub struct PanelConfig {
+    /// Panel brand — metadata, part of the TOML schema; not consumed by the sim.
+    #[allow(dead_code)]
     pub brand: String,
     pub model: String,
     pub voc:   f64,
