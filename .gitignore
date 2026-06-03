@@ -40,11 +40,18 @@ desktop.ini
 
 # Data & Logs
 *.log
-data/*.csv
 data/*.json
 data/*.sqlite
 data/*.sqlite-shm
 data/*.sqlite-wal
+# Regenerable training intermediates (recreated by ai/dataset_generator.py + ai/train.py)
+data/train_sequences.pt
+data/val_sequences.pt
+data/*.png
+# Batteries-included: SHIP the trained model (data/helios_predictor.pt — no ignore rule)
+# and the PVGIS input CSV so a fresh clone runs OFFLINE with no re-training.
+data/*.csv
+!data/pvgis_murcia_tmy.csv
 !data/.gitkeep
 out/
 dist/

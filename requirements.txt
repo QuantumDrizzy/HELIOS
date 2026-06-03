@@ -1,5 +1,10 @@
-numpy
-torch
-requests
-matplotlib
-pytest
+# HELIOS-NODE — Python dependencies (pinned for reproducibility)
+#
+# CPU torch is sufficient: the CNN-LSTM trains in ~5 min on CPU. For GPU
+# acceleration install the matching CUDA wheel from https://pytorch.org instead
+# (the code is device-agnostic). Tested with: python 3.11, numpy 1.26, torch 2.x.
+numpy>=1.26,<2.0
+torch>=2.2,<3.0
+requests>=2.31
+matplotlib>=3.8
+pytest>=8.0

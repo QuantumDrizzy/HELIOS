@@ -59,53 +59,48 @@ helios-core (Rust)         ← MPPT Controller
 
 ## run
 
-### 0. Prerequisites
+### Prerequisites
 
 - Rust 1.78+ — https://rustup.rs
 - Python 3.11+ with pip
-- SQLite (bundled with Python)
+- **Windows only:** build from an *"x64 Native Tools Command Prompt for VS"* (or run
+  `vcvars64.bat` first) so cargo finds the MSVC linker.
 
 ```bash
-# Clone and enter
 git clone https://github.com/QuantumDrizzy/HELIOS.git
 cd HELIOS
-
-# Create runtime data directory
-mkdir -p data
-
-# Install Python dependencies
 pip install -r requirements.txt
 ```
 
-### 1. Prepare Data & Train Model
+### Quick start (one command)
+
+The repo is **batteries-included**: the trained model (`data/helios_predictor.pt`)
+and the PVGIS input (`data/pvgis_murcia_tmy.csv`) are committed, so a fresh clone
+runs **offline, with no internet and no re-training**.
 
 ```bash
-# Fetch real PVGIS irradiance data for Aljucer, Murcia (requires internet)
-python ai/pvgis_client.py
-
-# Generate training dataset with cloud perturbations
-python ai/dataset_generator.py
-
-# Train the LSTM model (~5 min on CPU)
-python ai/train.py --epochs 50
+./run.sh          # Linux / macOS   (--no-ui for headless)
+.\run.ps1         # Windows         (-NoUi for headless)
 ```
 
-### 2. Run the System
+The launcher is idempotent: it regenerates any missing data/model, then starts the
+AI agent (background) and the Rust core + egui dashboard (foreground). The SQLite
+IPC bus at `data/energy_bus.sqlite` is created automatically on first run.
 
-Open two terminals.
+### Manual steps (equivalent to the launcher)
 
-**Terminal 1 — AI Agent:**
 ```bash
-python ai/agent.py --serve
+# (Re)generate data + model — only needed to RE-train (a model is already shipped)
+python ai/pvgis_client.py          # fetch PVGIS TMY for Murcia (needs internet)
+python ai/dataset_generator.py     # add cloud perturbations → train/val sequences
+python ai/train.py --epochs 50     # train the CNN-LSTM (~5 min on CPU)
+
+# Run — two terminals
+python ai/agent.py --serve                 # terminal 1 — AI forecast agent (IPC bridge)
+cd rust && cargo run --release -- --ui     # terminal 2 — control loop + egui dashboard
 ```
 
-**Terminal 2 — Rust Core + Dashboard:**
-```bash
-cd rust/
-cargo run --release -- --ui
-```
-
-The system simulates day/night cycles using real PVGIS irradiance data. The egui dashboard renders power telemetry and AI forecasts in real-time. The SQLite DB at `data/energy_bus.sqlite` is created automatically on first run.
+The system simulates day/night cycles using real PVGIS irradiance data; the dashboard renders power telemetry and AI forecasts in real-time.
 
 ---
 
