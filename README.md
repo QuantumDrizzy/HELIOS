@@ -1,4 +1,4 @@
-# HELIOS-NODE
+# HELIOS
 
 [![CI](https://github.com/QuantumDrizzy/HELIOS/actions/workflows/ci.yml/badge.svg)](https://github.com/QuantumDrizzy/HELIOS/actions/workflows/ci.yml)
 
