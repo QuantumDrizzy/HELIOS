@@ -69,5 +69,12 @@ Bastion or feature-gate the PQC backend.
    `keygen_internal`/`sign_internal`/`verify_internal`, seeded from OsRng; secret
    key in the zeroizing `Protected`). Builds + 3 tests green (sign/verify roundtrip
    cross-checks Bastion's 3309-byte ML-DSA-65 signature; tamper fails; KEM session).
-2. [ ] helios-pqc-python → Bastion-backed PyO3.
+2. [x] helios-pqc-python — recon found it is a **socket client** to the Sentinel
+   daemon, not a PQC implementation. It carried **vestigial, unused** `ml-kem` /
+   `ml-dsa` / `chacha20poly1305` deps (removed) and a real bug: `use
+   std::os::windows::net::UnixStream` — a path that **does not exist in stable
+   std**, so the crate never compiled anywhere. Fixed to unix-only (`std::os::unix`)
+   with a clean "unix only" error on other OSes (cfg-gated, builds for dev). PQC is
+   delivered by the now-Bastion-backed daemon it talks to → HELIOS's PQC is
+   **end-to-end sovereign**. `cargo check` green.
 3. [x] README/status update (PQC rows + stack line now Bastion-backed).

@@ -9,13 +9,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.21", features = ["extension-module"] }
-tokio = { version = "1.37", features = ["full"] }
 bincode = "1.3"
-serde = { version = "1.0", features = ["derive"] }
-chacha20poly1305 = "0.10"
-ml-kem = "0.2"
-ml-dsa = "0.1"
-anyhow = "1"
-zeroize = "1.7"
-# Reutilizamos el protocolo del Sentinel
+# PQC is performed by the Bastion-backed Sentinel daemon; this crate is only its
+# socket client, so it carries no crypto dependencies of its own (the ml-kem/
+# ml-dsa/chacha20poly1305/etc. deps were vestigial and unused — see docs/ADR-0002).
 helios-sentinel = { path = "../helios-sentinel" }
