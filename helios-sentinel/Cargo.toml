@@ -19,8 +19,8 @@ thiserror = "1"
 zeroize = { version = "1", features = ["derive"] }
 sha3 = "0.10"
 rand = "0.8"
-ml-kem = { version = "0.3.0", features = ["getrandom", "zeroize"] }
-ml-dsa = "0.1.0-rc.9"
+# Sovereign PQC core (from-scratch, KAT-green, audited) — see docs/ADR-0002.
+bastion = { path = "../../Bastion" }
 hex = "0.4"
 anyhow = "1"
 tracing = "0.1"

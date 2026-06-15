@@ -19,7 +19,7 @@ Predictive DC-microgrid controller for solar arrays. Features an MPPT loop in Ru
 | PVGIS TMY data client | `ai/pvgis_client.py` | real — fetches data for Murcia |
 | training dataset generator | `ai/dataset_generator.py` | real — adds cloud perturbations |
 | model training pipeline | `ai/train.py` | real — generates `helios_predictor.pt` |
-| helios-sentinel PQC daemon | `helios-sentinel/src/` | framework real |
+| helios-sentinel PQC daemon | `helios-sentinel/src/` | framework real — **PQC backed by Bastion** (sovereign ML-DSA-65 + ML-KEM-768, KAT-green + audited; `docs/ADR-0002`), tests green |
 
 ---
 
@@ -53,7 +53,7 @@ helios-core (Rust)         ← MPPT Controller
 
 ## stack
 
-`Rust 1.78` · `tokio` · `egui` · `sqlx / SQLite WAL` · `sha2` · `ml-kem 0.2` · `ml-dsa 0.1` · `PyTorch 2.x`
+`Rust 1.78` · `tokio` · `egui` · `sqlx / SQLite WAL` · `sha2` · `Bastion (sovereign PQC: ML-KEM-768 + ML-DSA-65)` · `PyTorch 2.x`
 
 ---
 

@@ -3,6 +3,10 @@
 // All modules are inline — the previous file had duplicate file-based
 // and inline mod declarations, which Rust rejects.
 
+// The runtime (Unix-domain-socket server) is unix-only; on non-unix dev builds the
+// crypto entry points are reached only via tests, so allow dead_code there honestly.
+#![cfg_attr(not(unix), allow(dead_code))]
+
 use std::path::PathBuf;
 use std::sync::Arc;
 
@@ -64,88 +68,82 @@ mod registry {
 // ─── crypto_engine ───────────────────────────────────────────────────────────
 
 mod crypto_engine {
+    // Sovereign PQC via Bastion (from-scratch ML-DSA-65 / ML-KEM-768, KAT-green,
+    // audited) — see docs/ADR-0002. We use the *_internal / *_derand entry points
+    // (the audited, re-exported surface) seeded from the OS CSPRNG.
     use anyhow::{Context, Result, ensure};
-    use ml_dsa::{B32, KeyGen, MlDsa65, SigningKey, VerifyingKey};
-    use ml_dsa::signature::{Keypair, Signer, Verifier};
-    use ml_kem::{Kem, KeyExport, MlKem768};
+    use bastion::kem::{encaps_derand, keygen_derand};
+    use bastion::sig::{keygen_internal, sign_internal, verify_internal};
     use rand::RngCore;
     use rand::rngs::OsRng;
     use sha3::{Digest, Sha3_256};
     use std::path::Path;
 
+    use crate::keyring::Protected;
+
     pub struct CryptoEngine {
-        kp: SigningKey<MlDsa65>,
+        pk: Vec<u8>,
+        sk: Protected, // secret key, zeroized on drop
     }
 
     impl CryptoEngine {
-        /// Generate a fresh ML-DSA-65 keypair from a random 32-byte seed.
+        /// Generate a fresh ML-DSA-65 keypair from a random 32-byte seed (ξ).
         pub fn generate() -> Result<Self> {
-            let mut seed_bytes = [0u8; 32];
-            OsRng.fill_bytes(&mut seed_bytes);
-            // B32 = Array<u8, U32>; [u8;32] converts to it via From impl
-            let kp = MlDsa65::from_seed(&seed_bytes.into());
-            Ok(Self { kp })
+            let mut xi = [0u8; 32];
+            OsRng.fill_bytes(&mut xi);
+            let (pk, sk) = keygen_internal(&xi);
+            xi = [0u8; 32]; // best-effort scrub of the seed
+            let _ = xi;
+            Ok(Self { pk, sk: Protected::new(sk) })
         }
 
-        /// Load keypair from a saved 32-byte seed file, or generate + persist a fresh one.
+        /// Load the keypair from a saved 32-byte seed (ξ), or generate + persist one.
         pub fn load_or_generate(seed_path: &Path) -> Result<Self> {
+            let mut xi = [0u8; 32];
             if seed_path.exists() {
                 let bytes = std::fs::read(seed_path).context("reading ML-DSA seed")?;
                 ensure!(bytes.len() == 32, "corrupt seed: expected 32 bytes, got {}", bytes.len());
-                let mut arr = [0u8; 32];
-                arr.copy_from_slice(&bytes);
-                let kp = MlDsa65::from_seed(&arr.into());
-                tracing::info!("ML-DSA-65 key loaded from {:?}", seed_path);
-                Ok(Self { kp })
+                xi.copy_from_slice(&bytes);
+                tracing::info!("ML-DSA-65 (Bastion) key loaded from {:?}", seed_path);
             } else {
-                let engine = Self::generate()?;
-                // to_seed() returns B32 = Array<u8, U32>; .as_ref() gives &[u8]
-                let seed = engine.kp.to_seed();
-                std::fs::write(seed_path, seed.as_ref()).context("saving ML-DSA seed")?;
-                tracing::info!("ML-DSA-65 keypair generated, seed → {:?}", seed_path);
-                Ok(engine)
+                OsRng.fill_bytes(&mut xi);
+                std::fs::write(seed_path, xi).context("saving ML-DSA seed")?;
+                tracing::info!("ML-DSA-65 (Bastion) keypair generated, seed → {:?}", seed_path);
             }
+            let (pk, sk) = keygen_internal(&xi);
+            xi = [0u8; 32];
+            let _ = xi;
+            Ok(Self { pk, sk: Protected::new(sk) })
         }
 
         /// Write the verifying-key bytes to `path` for use by `helios-verify`.
         pub fn export_verifying_key(&self, path: &Path) -> Result<()> {
-            std::fs::write(path, self.verifying_key_bytes())
-                .context("exporting verifying key")
+            std::fs::write(path, &self.pk).context("exporting verifying key")
         }
 
-        /// Raw verifying-key bytes (1952 bytes for ML-DSA-65).
+        /// Raw ML-DSA-65 verifying-key (public-key) bytes.
         pub fn verifying_key_bytes(&self) -> Vec<u8> {
-            // verifying_key() via Keypair trait; encode() returns EncodedVerifyingKey<P>
-            self.kp.verifying_key().encode().as_ref().to_vec()
-        }
-
-        pub fn verifying_key(&self) -> VerifyingKey<MlDsa65> {
-            self.kp.verifying_key()
+            self.pk.clone()
         }
 
         /// Sign a pre-computed 32-byte hash.
         ///
-        /// Returns `[hash (32 bytes) || ML-DSA-65 signature (3309 bytes)]` = 3341 bytes.
+        /// Returns `[hash (32 bytes) || ML-DSA-65 signature]`. Deterministic
+        /// (FIPS-204 internal signing with a zero randomizer) so audit-log entries
+        /// are reproducible.
         pub fn sign_hash(&self, hash: &[u8; 32]) -> Vec<u8> {
-            // Signer::sign panics only on error; deterministic ML-DSA never fails
-            let sig = self.kp.sign(hash.as_ref());
+            let sig = sign_internal(self.sk.as_slice(), hash.as_ref(), &[0u8; 32]);
             let mut blob = hash.to_vec();
-            // to_bytes() via SignatureEncoding; Repr = EncodedSignature<P>
-            blob.extend_from_slice(sig.to_bytes().as_ref());
+            blob.extend_from_slice(&sig);
             blob
         }
 
-        /// Verify a blob produced by `sign_hash` against the same hash.
-        pub fn verify_blob(vk: &VerifyingKey<MlDsa65>, blob: &[u8]) -> bool {
+        /// Verify a blob produced by `sign_hash` against the verifying-key bytes.
+        pub fn verify_blob(pk: &[u8], blob: &[u8]) -> bool {
             if blob.len() < 32 {
                 return false;
             }
-            let hash = &blob[..32];
-            let sig_bytes = &blob[32..];
-            match ml_dsa::Signature::<MlDsa65>::try_from(sig_bytes) {
-                Ok(sig) => vk.verify(hash, &sig).is_ok(),
-                Err(_) => false,
-            }
+            verify_internal(pk, &blob[..32], &blob[32..])
         }
 
         /// Compute SHA3-256(data) as a 32-byte array.
@@ -155,27 +153,24 @@ mod crypto_engine {
             h.finalize().into()
         }
 
-        /// Generate a one-shot ML-KEM-768 session (requires getrandom feature on ml-kem).
+        /// Generate a one-shot ML-KEM-768 session.
         ///
         /// Returns `(shared_key_32, encapsulation_key_bytes, ciphertext_bytes)`.
-        /// The shared key is a 32-byte secret suitable for AES-256 or ChaCha20-Poly1305.
+        /// The shared key is a 32-byte secret suitable for ChaCha20-Poly1305.
         pub fn generate_shm_session() -> Result<([u8; 32], Vec<u8>, Vec<u8>)> {
-            use ml_kem::{Decapsulate, Encapsulate};
-
-            // generate_keypair() uses getrandom internally (no RNG arg needed)
-            let (_dk, ek) = MlKem768::generate_keypair();
-
-            // encapsulate() uses getrandom internally
-            let (ct, ss) = ek.encapsulate();
-
+            let (mut d, mut z, mut m) = ([0u8; 32], [0u8; 32], [0u8; 32]);
+            OsRng.fill_bytes(&mut d);
+            OsRng.fill_bytes(&mut z);
+            OsRng.fill_bytes(&mut m);
+            let (ek, _dk) = keygen_derand(&d, &z);
+            let (ct, ss) = encaps_derand(&ek, &m);
+            d = [0u8; 32];
+            z = [0u8; 32];
+            m = [0u8; 32];
+            let _ = (d, z, m);
             let mut key = [0u8; 32];
-            key.copy_from_slice(ss.as_ref());
-
-            // to_bytes() from KeyExport trait; as_bytes() from Ciphertext<P>
-            let ek_bytes = ek.to_bytes().as_ref().to_vec();
-            let ct_bytes = ct.as_bytes().to_vec();
-
-            Ok((key, ek_bytes, ct_bytes))
+            key.copy_from_slice(&ss);
+            Ok((key, ek.to_vec(), ct.to_vec()))
         }
     }
 }
@@ -282,8 +277,6 @@ mod server {
 #[cfg(test)]
 mod tests {
     use super::crypto_engine::CryptoEngine;
-    use ml_dsa::{MlDsa65, VerifyingKey};
-    use ml_dsa::signature::Verifier;
 
     #[test]
     fn test_sign_and_verify_roundtrip() {
@@ -294,18 +287,18 @@ mod tests {
 
         let blob = engine.sign_hash(&hash);
 
-        // ML-DSA-65: 32-byte hash prefix + 3309-byte signature
+        // ML-DSA-65: 32-byte hash prefix + 3309-byte signature (Bastion)
         assert_eq!(blob.len(), 32 + 3309, "blob size: {}", blob.len());
         assert_eq!(&blob[..32], hash.as_ref(), "embedded hash must match");
 
-        // Verify via VerifyingKey
-        let vk = engine.verifying_key();
-        let sig = ml_dsa::Signature::<MlDsa65>::try_from(&blob[32..])
-            .expect("signature must parse");
-        vk.verify(hash.as_ref(), &sig).expect("signature must verify");
+        let pk = engine.verifying_key_bytes();
+        assert!(CryptoEngine::verify_blob(&pk, &blob), "verify_blob must return true");
 
-        // Verify via the helper function
-        assert!(CryptoEngine::verify_blob(&vk, &blob), "verify_blob must return true");
+        // a tampered signature must fail
+        let mut bad = blob.clone();
+        let n = bad.len();
+        bad[n - 1] ^= 1;
+        assert!(!CryptoEngine::verify_blob(&pk, &bad), "tampered signature must fail");
     }
 
     #[test]

@@ -65,6 +65,9 @@ Bastion or feature-gate the PQC backend.
 5. Update the README "what exists" PQC rows to note the Bastion-backed, sovereign core.
 
 ## Action items
-1. [ ] helios-sentinel → Bastion (KEM + SIG), tests green.
+1. [x] helios-sentinel → Bastion (KEM via `keygen_derand`/`encaps_derand`, SIG via
+   `keygen_internal`/`sign_internal`/`verify_internal`, seeded from OsRng; secret
+   key in the zeroizing `Protected`). Builds + 3 tests green (sign/verify roundtrip
+   cross-checks Bastion's 3309-byte ML-DSA-65 signature; tamper fails; KEM session).
 2. [ ] helios-pqc-python → Bastion-backed PyO3.
-3. [ ] README/status update.
+3. [x] README/status update (PQC rows + stack line now Bastion-backed).
