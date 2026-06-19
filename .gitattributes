@@ -14,3 +14,7 @@
 *.pdf    binary
 *.otf    binary
 *.sqlite binary
+
+# Linguist: build/deploy scripts are not the implementation language (Rust/Python/CUDA).
+*.sh  linguist-vendored
+*.ps1 linguist-vendored
