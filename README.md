@@ -19,7 +19,7 @@ Predictive DC-microgrid controller for solar arrays. Features an MPPT loop in Ru
 | PVGIS TMY data client | `ai/pvgis_client.py` | real — fetches data for Murcia |
 | training dataset generator | `ai/dataset_generator.py` | real — adds cloud perturbations |
 | model training pipeline | `ai/train.py` | real — generates `helios_predictor.pt` |
-| helios-sentinel PQC daemon | `helios-sentinel/src/` | framework real — **PQC backed by Bastion** (sovereign ML-DSA-65 + ML-KEM-768, KAT-green + audited; `docs/ADR-0002`), tests green |
+| helios-sentinel PQC daemon **(optional)** | `helios-sentinel/src/` | real framework — PQC via **Bastion (private crate)**: sovereign ML-DSA-65 + ML-KEM-768, KAT-green + audited (`docs/ADR-0002`). **Not required for the core** — see Scope (`docs/ADR-0003`). |
 
 ---
 
@@ -65,6 +65,13 @@ helios-core (Rust)         ← MPPT Controller
 - Python 3.11+ with pip
 - **Windows only:** build from an *"x64 Native Tools Command Prompt for VS"* (or run
   `vcvars64.bat` first) so cargo finds the MSVC linker.
+
+> **Scope — what builds standalone:** the **core** (Quick start below — `ai/` forecasting +
+> `rust/` control loop + egui dashboard) needs **no Bastion and no internet**: clone,
+> `pip install`, `./run.sh`. The `helios-sentinel` PQC daemon is **optional** and depends on
+> the **private** Bastion crate (clone it adjacent at `../../Bastion` for the PQC path);
+> outsiders can ignore it entirely. The three Rust crates are independent — building the core
+> never touches the sentinel. See `docs/ADR-0003`.
 
 ```bash
 git clone https://github.com/QuantumDrizzy/HELIOS.git
